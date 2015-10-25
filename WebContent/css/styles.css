@@ -1,0 +1,24 @@
+﻿@charset "utf-8";
+*{font-size:9pt;margin:0;padding:0;}
+body{font-family:'微软雅黑'; margin:0 auto;min-width:980px;}
+ul{display:block;margin:0;padding:0;list-style:none;}
+li{display:block;margin:0;padding:0;list-style: none;}
+img{border:0;}
+a,a:focus{text-decoration:none;color:#000;outline:none;blr:expression(this.onFocus=this.blur());}
+a:hover{color:#00a4ac;}
+table{border-collapse:collapse;border-spacing: 0;}
+cite{font-style:normal;}
+
+/**addtip**/
+.addtip{width:485px; height:360px; position:absolute;top:10%; left:30%;background:#fcfdfd;box-shadow:1px 8px 10px 1px #9b9b9b;border-radius:1px; display:none; z-index:111111;}
+.tiptop{height:40px; line-height:40px; background:#3b95ca  repeat-x; cursor:pointer;}
+.tiptop span{font-size:14px; font-weight:bold; color:#fff;float:left; text-indent:20px;}
+.tiptop a{display:block; background:url(../images/close.png) no-repeat; width:22px; height:22px;float:right;margin-right:7px; margin-top:10px; cursor:pointer;}
+.tiptop a:hover{background:url(../images/close1.png) no-repeat;}
+.tipinfo{width: 100%;height: 250px;overflow-y: auto;}
+.tipright{width: 80%;margin-left:auto;margin-right:auto;}
+.tipright p{font-size:14px; font-weight:bold; line-height:35px;}
+.tipright cite{color:#3b95ca;}
+.tipbtn{margin-top:25px; margin-left:125px;}
+.sure ,.cancel{width:96px; height:35px; line-height:35px; color:#fff; background:#3b95ca repeat-x; font-size:14px; font-weight:bold;border-radius: 3px; cursor:pointer;}
+.cancel{background:#d0d5d9 repeat-x;color:#000;font-weight:normal;}

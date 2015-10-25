@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<beans xmlns="http://www.springframework.org/schema/beans" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+       xmlns:aop="http://www.springframework.org/schema/aop" 
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans  
+                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+                           http://www.springframework.org/schema/tx  
+                           http://www.springframework.org/schema/tx/spring-tx-3.0.xsd 
+                           http://www.springframework.org/schema/aop  
+                           http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+                           http://www.springframework.org/schema/context
+							http://www.springframework.org/schema/context/spring-context-3.0.xsd "
+							default-lazy-init="true">
+	<!-- 引入配置文件 --> 
+    <bean id="configProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean"> 
+        <property name="locations"> 
+            <list> 
+                <value>classpath:/jdbc.properties</value>
+                <value>classpath:/log4j.properties</value>
+                <value>classpath:/mail.properties</value>
+                <value>classpath:/template.properties</value> 
+            </list> 
+        </property> 
+    </bean>
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">  
+        <property name="properties" ref="configProperties" />  
+    </bean>
+	<context:component-scan base-package="com.javasj.share">
+		<!-- 排除扫描 @Controller  防止与SpringMVC容器重复扫描 -->
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<!-- 指定连接数据库的驱动 -->
+		<property name="driverClass" value="${jdbc.driverClassName}" />
+		<!-- 指定连接数据库的URL -->
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<!-- 指定连接数据库的用户名 -->
+		<property name="user" value="${jdbc.username}" />
+		<!-- 指定连接数据库的密码 -->
+		<property name="password" value="${jdbc.password}" />
+		<!-- 指定连接数据库连接池的最大连接数 -->
+		<property name="maxPoolSize" value="${proxool.maxConnCount}" />
+		<!-- 指定连接数据库连接池的最小连接数 -->
+		<property name="minPoolSize" value="${proxool.minConnCount}" />
+		<!-- 指定连接数据库连接池的初始化连接数 -->
+		<property name="initialPoolSize" value="40" />
+		<!--最大空闲时间,60秒内未使用则连接被丢弃。若为0则永不丢弃。Default: 0 -->
+		<property name="maxIdleTime" value="60" />
+		<!--当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3 -->
+		<property name="acquireIncrement" value="5" />
+		<!--每60秒检查所有连接池中的空闲连接。Default: 0 -->
+		<property name="idleConnectionTestPeriod" value="60" />
+	</bean>
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean"> 
+        <property name="dataSource" ref="dataSource" /> 
+        <property name="packagesToScan">
+            <list> 
+            	<value>com.javasj.share.entity</value>
+            </list> 
+        </property> 
+        <property name="hibernateProperties"> 
+         	<props>
+		        <prop key="hibernate.show_sql">true</prop> 
+		        <prop key="hibernate.format_sql">true</prop>
+		        <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+		       	<prop key="hibernate.hbm2ddl.auto">update</prop>
+		       	<prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate4.SpringSessionContext</prop>
+  			</props>
+        </property> 
+    </bean>
+	<!-- 配置Spring的事务处理 -->
+	<!-- 创建事务管理器-->
+	<bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- 配置事务的传播特性 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager"> 
+        <tx:attributes> 
+	        <tx:method name="get*" read-only="true"/> 
+	        <tx:method name="find*" read-only="true"/> 
+	        <tx:method name="search*" read-only="true"/> 
+	        <tx:method name="query*" read-only="true"/>
+            <tx:method name="add*" propagation="REQUIRED"/> 
+            <tx:method name="update*" propagation="REQUIRED"/>
+            <tx:method name="save*" propagation="REQUIRED"/>
+            <tx:method name="create*" propagation="REQUIRED"/>
+            <tx:method name="del*" propagation="REQUIRED"/> 
+            <tx:method name="*" propagation="REQUIRED" read-only="true" />
+        </tx:attributes> 
+    </tx:advice>     
+    <tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" /> 
+    
+	 <!-- 那些类的哪些方法参与事务 -->
+    <aop:config proxy-target-class="true"> 
+        <aop:pointcut id="serviceMethod" expression="execution(* com.javasj.share.service..*.*(..))" /> 
+        <aop:advisor pointcut-ref="serviceMethod" advice-ref="txAdvice"/> 
+    </aop:config> 
+    <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<bean id="mappingJacksonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" />
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="freeMarkerConfigurer" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+		<property name="templateLoaderPaths" value="${template.loader_path}" />
+		<!-- 设置FreeMarker环境属性 -->
+		<property name="freemarkerSettings">
+			<props>
+				<prop key="defaultEncoding">${template.encoding}</prop><!--模板的编码格式 -->
+				<prop key="url_escaping_charset">${url_escaping_charset}</prop>
+				<prop key="locale">${locale}</prop><!-- 本地化设置 -->
+				<prop key="template_update_delay">${template.update_delay}</prop><!--刷新模板的周期，单位为秒 -->
+				<prop key="tag_syntax">auto_detect</prop>
+				<prop key="whitespace_stripping">true</prop>
+				<prop key="classic_compatible">true</prop><!-- 兼容传统模式:用于空值的处理  -->
+				<prop key="number_format">${template.number_format}</prop>
+				<prop key="boolean_format">${template.boolean_format}</prop>
+				<prop key="datetime_format">${template.datetime_format}</prop>
+				<prop key="date_format">${template.date_format}</prop>
+				<prop key="time_format">${template.time_format}</prop>
+				<prop key="object_wrapper">freemarker.ext.beans.BeansWrapper</prop>
+			</props>
+		</property>
+		<property name="freemarkerVariables">
+			<map>
+			    <!-- 
+				<entry key="navigation_list" value-ref="navigationListDirective" />
+			     -->
+			
+			</map>
+		</property>
+	</bean>
+
+	<bean id="javaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.auth">${mail.smtp.auth}</prop>
+				<prop key="mail.smtp.timeout">${mail.smtp.timeout}</prop>
+				<prop key="mail.smtp.starttls.enable">${mail.smtp.starttls.enable}</prop>
+			</props>
+		</property>
+	</bean>
+</beans>
